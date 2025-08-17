@@ -1,0 +1,16 @@
+.git
+.env
+.DS_Store
+__pycache__/
+.astro
+.venv
+
+
+airflow_settings.yaml
+airflow-webserver.pid
+webserver_config.py
+airflow.cfg
+airflow.db
+
+# MinIO temporary files Folder
+include/data/minio/.minio.sys/tmp
