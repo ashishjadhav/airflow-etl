@@ -12,8 +12,10 @@ webserver_config.py
 airflow.cfg
 airflow.db
 
-# MinIO
-include/data/minio/.minio.sys/tmp/
+# MinIO system files
+include/data/minio/.minio.sys/
+*.bloomcycle.bin
+xl.meta
 
 # IDE/Editor files
 .vscode/
