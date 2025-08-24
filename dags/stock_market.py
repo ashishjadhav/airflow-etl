@@ -30,7 +30,8 @@ def stock_market():
     def is_api_available() -> PokeReturnValue:
         """Logic to check if the stock API is available"""
         import requests
-        # Access the connection setup in Airflow UI via BaseHook
+
+        # Access the connection data of the API via BaseHook
         api = BaseHook.get_connection(conn_id="stock_api")
         url = f"{api.host}{api.extra_dejson['endpoint']}"
         print(f"Checking API availability at {url}")
@@ -70,8 +71,16 @@ def stock_market():
         environment={
             'SPARK_APPLICATION_ARGS': '{{ ti.xcom_pull(task_ids="store_prices") }}'
         }
-
     )
+    # Task 4 
+    # get_formatted_csv = PythonOperator(
+    #     task_id='get_formatted_csv',
+    #     python_callable=_get_formatted_csv,
+    #     op_kwargs={
+    #         'input_data': '{{ ti.xcom_pull(task_ids="store_prices") }}'
+    #     }
+    # )
+
 
 # Set sequence of the tasks
     is_api_available() >> get_stock_prices >> store_prices >> format_prices

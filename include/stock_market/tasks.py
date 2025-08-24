@@ -49,7 +49,8 @@ def _store_prices(stock: dict) -> str:
     stock = json.loads(stock)
     symbol = stock['meta']['symbol']
     data = json.dumps(stock, ensure_ascii=False).encode('utf-8')  # Serialize into json string
-    # Store the file into the database
+    
+    # Store the file as a binary buffer into the database
     objw = client.put_object(bucket_name=bucket_name,
                              object_name=f"{symbol}/prices.json",
                              data=BytesIO(data),
