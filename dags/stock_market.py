@@ -5,11 +5,15 @@ from datetime import datetime
 from airflow.decorators import dag, task
 from airflow.hooks.base import BaseHook
 from airflow.operators.python import PythonOperator
-from airflow.providers.docker.operators.docker import DockerOperator
 from airflow.sensors.base import PokeReturnValue
+from astro import sql as aql
+from astro.files import File
+from astro.sql.table import Table, Metadata
 
+from airflow.providers.docker.operators.docker import DockerOperator
+from airflow.providers.slack.notifications.slack_notifier import SlackNotifier
 # Custom imports
-from include.stock_market.tasks import _get_stock_prices, _store_prices
+from include.stock_market.tasks import BUCKET_NAME, _get_stock_prices, _store_prices, _get_formatted_csv
 
 SYMBOL = "NVDA"
 
@@ -21,6 +25,13 @@ SYMBOL = "NVDA"
     schedule="@daily",
     catchup=False,
     tags=["stock_market"],
+    on_success_callback=SlackNotifier(slack_conn_id = 'slack',
+                                      text = "DAG Succeeded",
+                                      channel = "#general"),
+
+    on_failure_callback=SlackNotifier(slack_conn_id = 'slack',
+                                        text = "DAG Failed",
+                                        channel = "#general")
 )
 def stock_market():
 
@@ -38,7 +49,7 @@ def stock_market():
 
         # Make GET request to the Weather API
         response = requests.get(url, headers=api.extra_dejson['headers'])
-
+        print(f"Content of the response, in unicode : {response.text}")
         condition = response.json()['finance']['result'] is None
         return PokeReturnValue(is_done=condition, xcom_value=url)
 
@@ -72,18 +83,38 @@ def stock_market():
             'SPARK_APPLICATION_ARGS': '{{ ti.xcom_pull(task_ids="store_prices") }}'
         }
     )
-    # Task 4 
-    # get_formatted_csv = PythonOperator(
-    #     task_id='get_formatted_csv',
-    #     python_callable=_get_formatted_csv,
-    #     op_kwargs={
-    #         'input_data': '{{ ti.xcom_pull(task_ids="store_prices") }}'
-    #     }
-    # )
+    # Task 5
+    get_formatted_csv = PythonOperator(
+        task_id='get_formatted_csv',
+        python_callable=_get_formatted_csv,
+        op_kwargs={
+            'path': '{{ ti.xcom_pull(task_ids="store_prices") }}'
+        }
+    )
+    # Task 5
+    load_to_dw = aql.load_file(
+        task_id='load_to_dw',
+        input_file=File(
+            path = f"s3://{BUCKET_NAME}/{{{{ti.xcom_pull(task_ids='get_formatted_csv')}}}}",
+            conn_id='minio'
+        ),
+        output_table=Table(
+            name='stock_market',
+            conn_id='postgres',
+            metadata=Metadata(
+                schema='public',
+            )
+        ),
+        load_options={
+            "aws_access_key_id": BaseHook.get_connection('minio').login,
+            "aws_secret_access_key": BaseHook.get_connection('minio').password,
+            "endpoint_url": BaseHook.get_connection('minio').host,
+        }
 
+    )
 
 # Set sequence of the tasks
-    is_api_available() >> get_stock_prices >> store_prices >> format_prices
+    is_api_available() >> get_stock_prices >> store_prices >> format_prices >>  get_formatted_csv >> load_to_dw
 
 
 # Create the DAG
