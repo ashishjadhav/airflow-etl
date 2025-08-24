@@ -1,45 +1,48 @@
-Overview
-========
+# Stock Market Data Pipeline
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+A data engineering pipeline built with Apache Airflow, Apache Spark, MinIO, and PostgreSQL for automated stock market data processing and analysis.
 
-Project Contents
-================
+## 🏗️ Architecture Overview
+The pipeline consists of 6 main tasks orchestrated by Apache Airflow:
 
-Your Astro project contains the following files and folders:
+1. **Task 1**: Check API Availability
+2. **Task 2**: Get Raw Data from Yahoo Finance
+3. **Task 3**: Store Data in MinIO Object Storage
+4. **Task 4**: Process Data with Apache Spark
+5. **Task 5**: Retrieve Processed Data
+6. **Task 6**: Load Data to PostgreSQL Warehouse
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes one example DAG:
-    - `example_astronauts`: This DAG shows a simple ETL pipeline example that queries the list of astronauts currently in space from the Open Notify API and prints a statement for each astronaut. The DAG uses the TaskFlow API to define tasks in Python, and dynamic task mapping to dynamically print a statement for each astronaut. For more on how this DAG works, see our [Getting started tutorial](https://www.astronomer.io/docs/learn/get-started-with-airflow).
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
 
-Deploy Your Project Locally
-===========================
+![Pipeline Architecture](./drawio/assests/Project.drawio.png)
 
-Start Airflow on your local machine by running 'astro dev start'.
 
-This command will spin up five Docker containers on your machine, each for a different Airflow component:
 
-- Postgres: Airflow's Metadata Database
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-- DAG Processor: The Airflow component responsible for parsing DAGs
-- API Server: The Airflow component responsible for serving the Airflow UI and API
-- Triggerer: The Airflow component responsible for triggering deferred tasks
 
-When all five containers are ready the command will open the browser to the Airflow UI at http://localhost:8080/. You should also be able to access your Postgres Database at 'localhost:5432/postgres' with username 'postgres' and password 'postgres'.
+## 🛠️ Technology Stack
 
-Note: If you already have either of the above ports allocated, you can either [stop your existing Docker containers or change the port](https://www.astronomer.io/docs/astro/cli/troubleshoot-locally#ports-are-not-available-for-my-local-airflow-webserver).
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Orchestration** | Apache Airflow | Workflow management and scheduling |
+| **Data Processing** | Apache Spark | Distributed data transformation |
+| **Object Storage** | MinIO | S3-compatible data lake storage |
+| **Data Warehouse** | PostgreSQL | Structured data storage |
+| **Containerization** | Docker & Docker Compose | Application packaging and deployment |
+| **Data Source** | Yahoo Finance API | Stock market data provider |
 
-Deploy Your Project to Astronomer
-=================================
+## 📁 Project Structure
 
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
-
-Contact
-=======
-
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+```
+airflow-etl/
+├── dags/
+│   └── stock_market.py              # Main Airflow DAG
+├── drawio                           # Drawio files
+├── include/
+│   └── stock_market/
+│       └── tasks.py                 # Custom task functions
+├── spark-apps/
+│   └── format_stock_data.py         # Spark data processing script
+├── docker-compose.override.yml      # Multi-container orchestration
+├── Dockerfile                       # Custom Airflow image from Astro
+├── requirements.txt                 # Python dependencies
+└── README.md                        # Project documentation
+```

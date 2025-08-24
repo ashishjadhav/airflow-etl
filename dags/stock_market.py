@@ -5,15 +5,20 @@ from datetime import datetime
 from airflow.decorators import dag, task
 from airflow.hooks.base import BaseHook
 from airflow.operators.python import PythonOperator
+from airflow.providers.docker.operators.docker import DockerOperator
+from airflow.providers.slack.notifications.slack_notifier import SlackNotifier
 from airflow.sensors.base import PokeReturnValue
 from astro import sql as aql
 from astro.files import File
-from astro.sql.table import Table, Metadata
+from astro.sql.table import Metadata, Table
 
-from airflow.providers.docker.operators.docker import DockerOperator
-from airflow.providers.slack.notifications.slack_notifier import SlackNotifier
 # Custom imports
-from include.stock_market.tasks import BUCKET_NAME, _get_stock_prices, _store_prices, _get_formatted_csv
+from include.stock_market.tasks import (
+    BUCKET_NAME,
+    _get_formatted_csv,
+    _get_stock_prices,
+    _store_prices,
+)
 
 SYMBOL = "NVDA"
 
@@ -25,13 +30,13 @@ SYMBOL = "NVDA"
     schedule="@daily",
     catchup=False,
     tags=["stock_market"],
-    on_success_callback=SlackNotifier(slack_conn_id = 'slack',
-                                      text = "DAG Succeeded",
-                                      channel = "#general"),
+    on_success_callback=SlackNotifier(slack_conn_id='slack',
+                                      text="DAG Succeeded",
+                                      channel="#general"),
 
-    on_failure_callback=SlackNotifier(slack_conn_id = 'slack',
-                                        text = "DAG Failed",
-                                        channel = "#general")
+    on_failure_callback=SlackNotifier(slack_conn_id='slack',
+                                      text="DAG Failed",
+                                      channel="#general")
 )
 def stock_market():
 
@@ -95,7 +100,7 @@ def stock_market():
     load_to_dw = aql.load_file(
         task_id='load_to_dw',
         input_file=File(
-            path = f"s3://{BUCKET_NAME}/{{{{ti.xcom_pull(task_ids='get_formatted_csv')}}}}",
+            path=f"s3://{BUCKET_NAME}/{{{{ti.xcom_pull(task_ids='get_formatted_csv')}}}}",
             conn_id='minio'
         ),
         output_table=Table(
@@ -114,7 +119,7 @@ def stock_market():
     )
 
 # Set sequence of the tasks
-    is_api_available() >> get_stock_prices >> store_prices >> format_prices >>  get_formatted_csv >> load_to_dw
+    is_api_available() >> get_stock_prices >> store_prices >> format_prices >> get_formatted_csv >> load_to_dw
 
 
 # Create the DAG
