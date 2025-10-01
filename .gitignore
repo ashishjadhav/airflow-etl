@@ -26,3 +26,4 @@ xl.meta
 
 # Hidden files (be careful with this - it's very broad)
 .*
+drawio/Project.drawio
